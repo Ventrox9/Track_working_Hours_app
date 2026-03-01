@@ -50,22 +50,58 @@
                         </div>
                     </div>
 
+                    <div class="earnings-cards" id="earnings-section" style="display: none;">
+                        <div class="card highlight-card">
+                            <span class="material-icons-round text-success">payments</span>
+                            <div class="card-content">
+                                <h3>Heute verdient</h3>
+                                <p id="earned-today" class="text-success highlight-text">0,00 €</p>
+                            </div>
+                        </div>
+                        <div class="card highlight-card">
+                            <span class="material-icons-round text-primary">account_balance_wallet</span>
+                            <div class="card-content">
+                                <h3>Diesen Monat</h3>
+                                <p id="earned-month" class="text-primary highlight-text">0,00 €</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="info-cards">
                         <div class="card">
                             <span class="material-icons-round text-primary">schedule</span>
                             <div class="card-content">
                                 <h3>Netto-Arbeitszeit</h3>
-                                <p id="net-time" class="text-secondary">00:00 (Pause abzogen)</p>
+                                <p id="net-time" class="text-secondary">0h 00m (inkl. Pausenabzug)</p>
+                            </div>
+                        </div>
+                        <div class="card" id="end-time-card" style="display: none;">
+                            <span class="material-icons-round text-warning" style="color: var(--warning-color);">hourglass_bottom</span>
+                            <div class="card-content">
+                                <h3>Ziel-Feierabend (8h Netto)</h3>
+                                <p id="target-end-time" class="text-secondary">--:-- Uhr</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="motivation-section" id="motivation-section" style="display: none;">
-                        <h3>Überstunden (Motivation)</h3>
-                        <p class="text-secondary" style="margin-bottom: 16px;">Verdienst: <span class="text-success">+<span id="extra-money">0,00</span> €</span></p>
-                        <div class="motivation-buttons">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3>Motivation (Ziel verschieben)</h3>
+                            <div class="toggle-group">
+                                <button class="toggle-btn active" id="toggle-time"><span class="material-icons-round" style="font-size: 16px;">schedule</span> Zeit</button>
+                                <button class="toggle-btn" id="toggle-money"><span class="material-icons-round" style="font-size: 16px;">euro</span> Geld</button>
+                            </div>
+                        </div>
+                        <p class="text-secondary" style="margin-bottom: 16px;">Extra Verdienst: <span class="text-success">+<span id="extra-money">0,00</span> €</span></p>
+
+                        <div class="motivation-buttons" id="motivation-time-btns">
                             <button class="btn btn-outline" id="btn-add-15">+15 Min</button>
                             <button class="btn btn-outline" id="btn-add-30">+30 Min</button>
+                        </div>
+
+                        <div class="motivation-buttons" id="motivation-money-btns" style="display: none;">
+                            <button class="btn btn-outline" id="btn-add-5eur">+5 €</button>
+                            <button class="btn btn-outline" id="btn-add-10eur">+10 €</button>
                         </div>
                     </div>
                 </div>

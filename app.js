@@ -95,9 +95,28 @@ function setupEventListeners() {
     const mainBtn = document.getElementById('main-action-btn');
     mainBtn.addEventListener('click', handleMainAction);
 
-    // Motivation Buttons
+    // Motivation Buttons (Time)
     document.getElementById('btn-add-15').addEventListener('click', () => addExtraTime(15));
     document.getElementById('btn-add-30').addEventListener('click', () => addExtraTime(30));
+
+    // Motivation Buttons (Money)
+    document.getElementById('btn-add-5eur').addEventListener('click', () => addExtraMoney(5));
+    document.getElementById('btn-add-10eur').addEventListener('click', () => addExtraMoney(10));
+
+    // Motivation Toggle
+    document.getElementById('toggle-time').addEventListener('click', () => {
+        document.getElementById('toggle-time').classList.add('active');
+        document.getElementById('toggle-money').classList.remove('active');
+        document.getElementById('motivation-time-btns').style.display = 'flex';
+        document.getElementById('motivation-money-btns').style.display = 'none';
+    });
+
+    document.getElementById('toggle-money').addEventListener('click', () => {
+        document.getElementById('toggle-money').classList.add('active');
+        document.getElementById('toggle-time').classList.remove('active');
+        document.getElementById('motivation-money-btns').style.display = 'flex';
+        document.getElementById('motivation-time-btns').style.display = 'none';
+    });
 
     // Settings
     document.getElementById('theme-toggle').addEventListener('change', (e) => {
@@ -183,12 +202,31 @@ function addExtraTime(minutes) {
     updateTimerDisplay(); // Update progress ring to reflect new goal/progress
 }
 
+function addExtraMoney(amount) {
+    // Calculate how many minutes are needed to earn this amount
+    // Hourly Rate / 60 = Per Minute Rate
+    // Minutes = Amount / Per Minute Rate
+    if (state.hourlyRate > 0) {
+        const perMinuteRate = state.hourlyRate / 60;
+        const minutes = amount / perMinuteRate;
+        state.extraMinutes += minutes;
+        saveState();
+        updateMotivationUI();
+        updateTimerDisplay();
+    } else {
+        alert("Bitte erst einen gültigen Stundenlohn in den Einstellungen hinterlegen.");
+    }
+}
+
 // --- DATA MANAGEMENT ---
 function saveDailyEntry() {
     const today = new Date().toDateString();
     let entryIndex = state.history.findIndex(entry => new Date(entry.date).toDateString() === today);
 
-    const totalGross = state.totalWorkedToday + (state.extraMinutes * 60 * 1000);
+    // totalGross is purely the actual time tracked/worked.
+    // Motivation (extraMinutes) is just a goal and should NEVER be added to actual tracked time.
+    const totalGross = state.totalWorkedToday;
+
     // Deduct pause if total time is greater than pause
     const netTime = Math.max(0, totalGross - PAUSE_MS);
 
@@ -217,6 +255,8 @@ function updateUI() {
     const icon = document.getElementById('main-action-icon');
     const statusText = document.getElementById('timer-status');
     const motivationSection = document.getElementById('motivation-section');
+    const earningsSection = document.getElementById('earnings-section');
+    const endTimeCard = document.getElementById('end-time-card');
 
     if (state.isRunning) {
         btn.classList.remove('btn-primary');
@@ -226,6 +266,8 @@ function updateUI() {
         statusText.classList.add('text-primary');
         statusText.classList.remove('text-secondary');
         motivationSection.style.display = 'block';
+        earningsSection.style.display = 'grid';
+        endTimeCard.style.display = 'flex';
     } else {
         btn.classList.remove('btn-danger');
         btn.classList.add('btn-primary');
@@ -233,11 +275,23 @@ function updateUI() {
         statusText.innerText = 'Pausiert / Bereit';
         statusText.classList.remove('text-primary');
         statusText.classList.add('text-secondary');
-        motivationSection.style.display = 'none';
+
+        // Only hide if we have NO time logged today and not running
+        if (state.totalWorkedToday === 0) {
+            motivationSection.style.display = 'none';
+            earningsSection.style.display = 'none';
+            endTimeCard.style.display = 'none';
+        } else {
+            // Keep visible if there is data
+            motivationSection.style.display = 'block';
+            earningsSection.style.display = 'grid';
+            endTimeCard.style.display = 'none'; // Only relevant while working
+        }
     }
 
     updateTimerDisplay();
     updateMotivationUI();
+    updateEarningsUI();
 }
 
 function updateTimerDisplay() {
@@ -246,7 +300,8 @@ function updateTimerDisplay() {
         currentSessionMs = new Date().getTime() - new Date(state.startTime).getTime();
     }
 
-    const totalGrossMs = state.totalWorkedToday + currentSessionMs + (state.extraMinutes * 60 * 1000);
+    // The actual elapsed time worked today, strictly without motivation minutes.
+    const totalGrossMs = state.totalWorkedToday + currentSessionMs;
     const netMs = Math.max(0, totalGrossMs - PAUSE_MS); // Apply 45 min pause deduction
 
     // Update Digital Display (Gross time for active timer feels more natural)
@@ -256,7 +311,8 @@ function updateTimerDisplay() {
     document.getElementById('net-time').innerText = `${formatMsToHM(netMs)} (inkl. Pausenabzug)`;
 
     // Update Progress Ring (Goal: 8 hours net = 8h 45m gross)
-    const goalGrossMs = WORK_GOAL_MS + PAUSE_MS;
+    // Goal scales with motivation extra minutes
+    const goalGrossMs = WORK_GOAL_MS + PAUSE_MS + (state.extraMinutes * 60 * 1000);
     let progressPercent = (totalGrossMs / goalGrossMs) * 100;
     if (progressPercent > 100) progressPercent = 100;
 
@@ -264,11 +320,65 @@ function updateTimerDisplay() {
     const circumference = 565.48; // 2 * pi * r (r=90)
     const offset = circumference - (progressPercent / 100) * circumference;
     circle.style.strokeDashoffset = offset;
+
+    // Update Target End Time if running
+    if (state.isRunning && state.startTime) {
+        // StartTime + 8h 45m + ExtraMinutes - Zeit die schon vor dieser Session gearbeitet wurde
+        const totalSessionMsNeeded = goalGrossMs - state.totalWorkedToday;
+
+        const endTime = new Date(state.startTime.getTime() + totalSessionMsNeeded);
+
+        let endH = endTime.getHours();
+        let endM = endTime.getMinutes();
+        endH = (endH < 10) ? "0" + endH : endH;
+        endM = (endM < 10) ? "0" + endM : endM;
+
+        document.getElementById('target-end-time').innerText = `${endH}:${endM} Uhr`;
+    }
+
+    // Update earnings live
+    updateEarningsUI(netMs);
 }
 
 function updateMotivationUI() {
     const extraMoney = (state.extraMinutes / 60) * state.hourlyRate;
     document.getElementById('extra-money').innerText = extraMoney.toFixed(2).replace('.', ',');
+}
+
+function updateEarningsUI(currentNetMs = null) {
+    // 1. Calculate Today's Earnings
+    let netTodayMs = currentNetMs;
+    if (netTodayMs === null) {
+        let sessionMs = 0;
+        if (state.isRunning && state.startTime) {
+            sessionMs = new Date().getTime() - new Date(state.startTime).getTime();
+        }
+        const grossToday = state.totalWorkedToday + sessionMs;
+        netTodayMs = Math.max(0, grossToday - PAUSE_MS);
+    }
+
+    const earnedToday = (netTodayMs / (1000 * 60 * 60)) * state.hourlyRate;
+    document.getElementById('earned-today').innerText = `${earnedToday.toFixed(2).replace('.', ',')} €`;
+
+    // 2. Calculate This Month's Earnings
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    let totalNetMonthMs = netTodayMs; // start with today's live data
+
+    // add all history entries from this month (excluding today since we added live today above)
+    const todayStr = now.toDateString();
+
+    state.history.forEach(entry => {
+        const d = new Date(entry.date);
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear && d.toDateString() !== todayStr) {
+            totalNetMonthMs += entry.netTimeMs;
+        }
+    });
+
+    const earnedMonth = (totalNetMonthMs / (1000 * 60 * 60)) * state.hourlyRate;
+    document.getElementById('earned-month').innerText = `${earnedMonth.toFixed(2).replace('.', ',')} €`;
 }
 
 // --- HELPERS ---
@@ -342,7 +452,7 @@ function renderHistory() {
             if (newHours !== null && !isNaN(newHours) && newHours !== "") {
                 const newNetMs = parseFloat(newHours) * 60 * 60 * 1000;
                 entry.netTimeMs = newNetMs;
-                entry.grossTimeMs = newNetMs + PAUSE_MS; // reverse calculate
+                entry.grossTimeMs = newNetMs + PAUSE_MS; // strictly actual gross time without motivation
                 saveState();
                 renderHistory();
                 renderChart();
