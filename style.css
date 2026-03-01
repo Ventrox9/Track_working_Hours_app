@@ -328,6 +328,35 @@ main {
     background-color: rgba(255,255,255,0.05);
 }
 
+/* Weekly Progress */
+.weekly-progress-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+}
+
+.weekly-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 12px;
+    background-color: var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    width: 0%;
+    transition: width 0.5s ease-out;
+}
+
 /* Motivation Section */
 .motivation-section {
     background-color: rgba(52, 168, 83, 0.1);

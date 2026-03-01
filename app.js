@@ -98,10 +98,12 @@ function setupEventListeners() {
     // Motivation Buttons (Time)
     document.getElementById('btn-add-15').addEventListener('click', () => addExtraTime(15));
     document.getElementById('btn-add-30').addEventListener('click', () => addExtraTime(30));
+    document.getElementById('btn-reset-motivation-time').addEventListener('click', resetMotivation);
 
     // Motivation Buttons (Money)
     document.getElementById('btn-add-5eur').addEventListener('click', () => addExtraMoney(5));
     document.getElementById('btn-add-10eur').addEventListener('click', () => addExtraMoney(10));
+    document.getElementById('btn-reset-motivation-money').addEventListener('click', resetMotivation);
 
     // Motivation Toggle
     document.getElementById('toggle-time').addEventListener('click', () => {
@@ -117,6 +119,9 @@ function setupEventListeners() {
         document.getElementById('motivation-money-btns').style.display = 'flex';
         document.getElementById('motivation-time-btns').style.display = 'none';
     });
+
+    // Holiday / Vacation
+    document.getElementById('add-holiday-btn').addEventListener('click', addHolidayEntry);
 
     // Settings
     document.getElementById('theme-toggle').addEventListener('change', (e) => {
@@ -279,7 +284,7 @@ function updateUI() {
         // Only hide if we have NO time logged today and not running
         if (state.totalWorkedToday === 0) {
             motivationSection.style.display = 'none';
-            earningsSection.style.display = 'none';
+            earningsSection.style.display = 'grid'; // Always show earnings
             endTimeCard.style.display = 'none';
         } else {
             // Keep visible if there is data
@@ -343,6 +348,49 @@ function updateTimerDisplay() {
 function updateMotivationUI() {
     const extraMoney = (state.extraMinutes / 60) * state.hourlyRate;
     document.getElementById('extra-money').innerText = extraMoney.toFixed(2).replace('.', ',');
+
+    // Show/hide reset buttons based on whether extra motivation is active
+    const showReset = state.extraMinutes > 0 ? 'inline-flex' : 'none';
+    document.getElementById('btn-reset-motivation-time').style.display = showReset;
+    document.getElementById('btn-reset-motivation-money').style.display = showReset;
+}
+
+function resetMotivation() {
+    state.extraMinutes = 0;
+    saveState();
+    updateUI();
+    updateMotivationUI();
+}
+
+function addHolidayEntry() {
+    const isConfirm = confirm("Möchtest du wirklich 8 Stunden als bezahlten Urlaub/Feiertag für heute eintragen?");
+    if (!isConfirm) return;
+
+    const holidayMs = 8 * 60 * 60 * 1000;
+
+    const todayStr = new Date().toDateString();
+    const existingIndex = state.history.findIndex(entry => new Date(entry.date).toDateString() === todayStr);
+
+    const newEntry = {
+        date: new Date().toISOString(),
+        grossTimeMs: holidayMs + PAUSE_MS, // so it calculates correctly to 8h net
+        netTimeMs: holidayMs,
+        extraMinutes: 0
+    };
+
+    if (existingIndex >= 0) {
+        state.history[existingIndex] = newEntry;
+    } else {
+        state.history.unshift(newEntry);
+    }
+
+    state.totalWorkedToday = newEntry.grossTimeMs;
+
+    saveState();
+    updateUI();
+    renderHistory();
+    renderChart();
+    alert("Urlaub/Feiertag erfolgreich eingetragen!");
 }
 
 function updateEarningsUI(currentNetMs = null) {
@@ -379,6 +427,37 @@ function updateEarningsUI(currentNetMs = null) {
 
     const earnedMonth = (totalNetMonthMs / (1000 * 60 * 60)) * state.hourlyRate;
     document.getElementById('earned-month').innerText = `${earnedMonth.toFixed(2).replace('.', ',')} €`;
+
+    updateWeeklyProgressUI(netTodayMs);
+}
+
+function updateWeeklyProgressUI(netTodayMs) {
+    const now = new Date();
+    // In JS, 0 is Sunday, 1 is Monday. We want Monday to be start of week.
+    let currentDayOfWeek = now.getDay();
+    if (currentDayOfWeek === 0) currentDayOfWeek = 7; // make Sunday 7
+
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - currentDayOfWeek + 1);
+    monday.setHours(0,0,0,0);
+
+    let totalNetWeekMs = netTodayMs;
+    const todayStr = now.toDateString();
+
+    state.history.forEach(entry => {
+        const d = new Date(entry.date);
+        if (d >= monday && d.toDateString() !== todayStr) {
+            totalNetWeekMs += entry.netTimeMs;
+        }
+    });
+
+    const totalWeekHours = (totalNetWeekMs / (1000 * 60 * 60));
+    const targetHours = 40;
+
+    const progressPercent = Math.min((totalWeekHours / targetHours) * 100, 100);
+
+    document.getElementById('weekly-progress-text').innerText = `${totalWeekHours.toFixed(1).replace('.', ',')}h / ${targetHours}h`;
+    document.getElementById('weekly-progress-fill').style.width = `${progressPercent}%`;
 }
 
 // --- HELPERS ---
