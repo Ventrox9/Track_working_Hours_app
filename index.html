@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stunden Tracker</title>
+
+    <!-- Google Fonts: Roboto & Material Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+
+    <!-- App JS -->
+    <script src="app.js" defer></script>
+</head>
+<body class="light-mode">
+    <div id="app">
+        <!-- Main Content Area -->
+        <main id="main-content">
+            <!-- Content will be injected here by app.js based on the active tab -->
+            <div id="dashboard-view" class="view active">
+                <header class="top-app-bar">
+                    <h1>Übersicht</h1>
+                </header>
+                <div class="content-padding">
+                    <!-- Dashboard content -->
+                    <div class="timer-card">
+                        <div class="progress-ring-container">
+                            <svg class="progress-ring" width="200" height="200">
+                                <circle class="progress-ring__circle-bg" stroke-width="8" fill="transparent" r="90" cx="100" cy="100"/>
+                                <circle class="progress-ring__circle" stroke-width="8" fill="transparent" r="90" cx="100" cy="100"/>
+                            </svg>
+                            <div class="timer-display">
+                                <h2 id="current-time">00:00:00</h2>
+                                <p id="timer-status" class="text-secondary">Bereit</p>
+                            </div>
+                        </div>
+
+                        <div class="timer-controls">
+                            <button id="main-action-btn" class="btn-fab btn-primary">
+                                <span class="material-icons-round" id="main-action-icon">play_arrow</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="info-cards">
+                        <div class="card">
+                            <span class="material-icons-round text-primary">schedule</span>
+                            <div class="card-content">
+                                <h3>Netto-Arbeitszeit</h3>
+                                <p id="net-time" class="text-secondary">00:00 (Pause abzogen)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="motivation-section" id="motivation-section" style="display: none;">
+                        <h3>Überstunden (Motivation)</h3>
+                        <p class="text-secondary" style="margin-bottom: 16px;">Verdienst: <span class="text-success">+<span id="extra-money">0,00</span> €</span></p>
+                        <div class="motivation-buttons">
+                            <button class="btn btn-outline" id="btn-add-15">+15 Min</button>
+                            <button class="btn btn-outline" id="btn-add-30">+30 Min</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="history-view" class="view">
+                <header class="top-app-bar">
+                    <h1>Verlauf</h1>
+                </header>
+                <div class="content-padding">
+                    <!-- History content -->
+                    <div class="card chart-card">
+                        <h3>Letzte 7 Tage</h3>
+                        <canvas id="history-chart" width="400" height="250"></canvas>
+                    </div>
+
+                    <div class="history-list" id="history-list">
+                        <!-- History items will be injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-view" class="view">
+                <header class="top-app-bar">
+                    <h1>Einstellungen</h1>
+                </header>
+                <div class="content-padding">
+                    <!-- Settings content -->
+                    <div class="card settings-card">
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <span class="material-icons-round text-primary">dark_mode</span>
+                                <div>
+                                    <h3>Dark Mode</h3>
+                                    <p class="text-secondary">Dunkles Design aktivieren</p>
+                                </div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="theme-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <hr class="divider">
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <span class="material-icons-round text-primary">payments</span>
+                                <div>
+                                    <h3>Stundenlohn (Netto)</h3>
+                                    <p class="text-secondary">Für Motivations-Berechnung</p>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <input type="number" id="hourly-rate" value="15" step="0.5" min="0" class="input-field">
+                                <span>€/h</span>
+                            </div>
+                        </div>
+
+                        <hr class="divider">
+
+                        <div class="setting-item" id="export-btn" style="cursor: pointer;">
+                            <div class="setting-info">
+                                <span class="material-icons-round text-success">download</span>
+                                <div>
+                                    <h3>Daten exportieren</h3>
+                                    <p class="text-secondary">Als CSV-Datei speichern</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="divider">
+
+                        <div class="setting-item" id="reset-btn" style="cursor: pointer;">
+                            <div class="setting-info">
+                                <span class="material-icons-round text-error">delete_forever</span>
+                                <div>
+                                    <h3 class="text-error">Daten löschen</h3>
+                                    <p class="text-secondary">Alle Einträge unwiderruflich löschen</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-target="dashboard-view">
+                <span class="material-icons-round">timer</span>
+                <span>Home</span>
+            </button>
+            <button class="nav-item" data-target="history-view">
+                <span class="material-icons-round">bar_chart</span>
+                <span>Verlauf</span>
+            </button>
+            <button class="nav-item" data-target="settings-view">
+                <span class="material-icons-round">settings</span>
+                <span>Profil</span>
+            </button>
+        </nav>
+    </div>
+</body>
+</html>
