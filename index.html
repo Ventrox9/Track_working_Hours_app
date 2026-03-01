@@ -1,41 +1,57 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Stunden Tracker</title>
-
-    <!-- Google Fonts: Roboto & Material Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
-
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-
-    <!-- App JS -->
     <script src="app.js" defer></script>
 </head>
+
 <body class="light-mode">
     <div id="app">
-        <!-- Main Content Area -->
         <main id="main-content">
-            <!-- Content will be injected here by app.js based on the active tab -->
+
+            <!-- ═══════════════ DASHBOARD VIEW ═══════════════ -->
             <div id="dashboard-view" class="view active">
-                <header class="top-app-bar">
-                    <h1>Übersicht</h1>
-                </header>
-                <div class="content-padding">
-                    <!-- Dashboard content -->
-                    <div class="timer-card">
+
+                <!-- Timer Card (integrates the header) -->
+                <div class="timer-card" style="padding: 0;">
+                    <div class="timer-card-topbar" style="padding: 12px 16px 0; position: relative; z-index: 10;">
+                        <h1 class="timer-card-title">Übersicht</h1>
+                        <div style="position:relative;">
+                            <button class="icon-btn header-menu-btn" id="header-menu-btn" title="Menü">
+                                <span class="material-icons-round menu-arrow-icon">expand_more</span>
+                            </button>
+                            <div class="dropdown-menu" id="header-dropdown">
+                                <button class="dropdown-item" id="dropdown-vacation-btn">
+                                    <span class="material-icons-round">beach_access</span>
+                                    <span>Urlaub eintragen</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="main-action-btn" class="main-action-area btn-primary">
                         <div class="progress-ring-container">
-                            <svg class="progress-ring" width="200" height="200">
-                                <circle class="progress-ring__circle-bg" stroke-width="8" fill="transparent" r="90" cx="100" cy="100"/>
-                                <circle class="progress-ring__circle" stroke-width="8" fill="transparent" r="90" cx="100" cy="100"/>
+                            <svg class="progress-ring" width="160" height="160">
+                                <!-- Background track -->
+                                <circle class="progress-ring__circle-bg" stroke-width="7" fill="transparent" r="67"
+                                    cx="80" cy="80" />
+                                <!-- Main work ring (0–8h) -->
+                                <circle class="progress-ring__circle" stroke-width="7" fill="transparent" r="67" cx="80"
+                                    cy="80" />
+                                <!-- Overtime ring (0–2h, outer, green) -->
+                                <circle class="progress-ring__ot-bg" stroke-width="5" fill="transparent" r="75" cx="80"
+                                    cy="80" />
+                                <circle class="progress-ring__ot" stroke-width="5" fill="transparent" r="75" cx="80"
+                                    cy="80" />
                             </svg>
                             <div class="timer-display">
                                 <h2 id="current-time">00:00:00</h2>
@@ -43,24 +59,28 @@
                             </div>
                         </div>
 
-                        <div class="timer-controls">
-                            <button id="main-action-btn" class="btn-fab btn-primary">
+                        <div class="timer-controls" style="margin-top: 5px;">
+                            <div class="fab-wrapper">
                                 <span class="material-icons-round" id="main-action-icon">play_arrow</span>
-                            </button>
+                            </div>
                         </div>
-                    </div>
+                    </button>
+                </div>
 
-                    <!-- Earnings Section: Always at the top -->
-                    <div class="earnings-cards" id="earnings-section" style="margin-bottom: 16px;">
+                <div class="content-padding">
+
+                    <!-- Geld-Card: Heute + Monat nebeneinander (keine Duplikate) -->
+                    <div class="earnings-cards" id="earnings-section">
                         <div class="card highlight-card">
-                            <span class="material-icons-round text-success">payments</span>
+                            <span class="material-icons-round text-success" style="font-size:20px;">payments</span>
                             <div class="card-content">
                                 <h3>Heute verdient</h3>
                                 <p id="earned-today" class="text-success highlight-text">0,00 €</p>
                             </div>
                         </div>
                         <div class="card highlight-card">
-                            <span class="material-icons-round text-primary">account_balance_wallet</span>
+                            <span class="material-icons-round text-primary"
+                                style="font-size:20px;">account_balance_wallet</span>
                             <div class="card-content">
                                 <h3>Diesen Monat</h3>
                                 <p id="earned-month" class="text-primary highlight-text">0,00 €</p>
@@ -68,100 +88,179 @@
                         </div>
                     </div>
 
-                    <!-- Weekly Progress Section -->
-                    <div class="card weekly-progress-card" style="margin-bottom: 24px;">
-                        <div class="weekly-header">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="material-icons-round text-primary">date_range</span>
-                                <h3 style="margin: 0;">Wochen-Ziel (40h)</h3>
+                    <!-- Wochen-Ziel: Full-card background progress -->
+                    <div class="week-goal-card" id="week-goal-card">
+                        <!-- Background Layers (Full Card) -->
+                        <div class="week-soll-notch-full" id="week-soll-notch"></div>
+
+                        <!-- Fill: covers actual out of 50h. Blue Gradient -->
+                        <div class="week-bar-seg full-height" id="week-bar-fill"></div>
+
+                        <!-- Foreground Content -->
+                        <div class="week-goal-content">
+                            <div class="week-goal-header">
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span class="material-icons-round text-primary" id="week-goal-icon"
+                                        style="font-size:17px;">date_range</span>
+                                    <span class="week-goal-title" id="week-goal-title">Wochen-Ziel</span>
+                                </div>
+                                <span id="weekly-progress-text" class="week-goal-total">0,0h / 40h</span>
                             </div>
-                            <span id="weekly-progress-text" class="text-primary" style="font-weight: 700;">0h / 40h</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" id="weekly-progress-fill"></div>
+
+                            <!-- Labels row under bar -->
+                            <div class="week-bar-info-row">
+                                <span class="week-bar-info-label" id="week-ist-label">Ist: 0,0h</span>
+                                <span class="week-diff-chip" id="week-diff-chip"
+                                    style="background: rgba(26,115,232,0.10); color: var(--primary-color);">
+                                    <span class="material-icons-round" id="week-diff-icon"
+                                        style="font-size:13px;">trending_up</span>
+                                    <span id="week-diff-text">Auf gutem Weg</span>
+                                </span>
+                                <span class="week-bar-info-label" id="week-soll-label">Ziel: 40h</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="info-cards">
-                        <div class="card">
-                            <span class="material-icons-round text-primary">schedule</span>
-                            <div class="card-content">
-                                <h3>Netto-Arbeitszeit</h3>
-                                <p id="net-time" class="text-secondary">0h 00m (inkl. Pausenabzug)</p>
+                    <!-- Ziel-Feierabend + Motivation merged card -->
+                    <div class="feierabend-card" id="end-time-card" style="display:none;">
+                        <!-- Row 1: Ziel-Feierabend time + daily progress % -->
+                        <div class="feierabend-top-row">
+                            <div class="feierabend-main">
+                                <span class="feierabend-label">Regelmäßiger Feierabend</span>
+                                <span class="feierabend-time" id="target-end-time">--:-- Uhr</span>
+                            </div>
+                            <div class="feierabend-earnings-col">
+                                <span class="feierabend-label">Tagesziel</span>
+                                <span class="feierabend-money" id="feierabend-day-pct">0%</span>
                             </div>
                         </div>
 
-                        <!-- Prominent Ziel-Feierabend Card -->
-                        <div class="card target-end-card" id="end-time-card" style="display: none; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; justify-content: space-between;">
-                            <div style="display: flex; align-items: center; gap: 16px;">
-                                <span class="material-icons-round" style="color: white; font-size: 32px;">sports_score</span>
-                                <div class="card-content">
-                                    <h3 style="color: rgba(255,255,255,0.9);">Ziel-Feierabend</h3>
-                                    <p id="target-end-time" style="font-size: 24px; font-weight: 700; color: white;">--:-- Uhr</p>
+                        <!-- Row 2: Progress bar (worked time vs. 8h) hidden label bar -->
+                        <div class="feierabend-bar-wrap">
+                            <div class="feierabend-bar-fill" id="feierabend-bar-fill" style="width: 0%"></div>
+                            <span class="feierabend-bar-label" id="feierabend-bar-label">0%</span>
+                        </div>
+
+                        <!-- Row 3: Divider + Ziel verschieben -->
+                        <div class="feierabend-shift-row">
+                            <div class="feierabend-shift-header">
+                                <span class="feierabend-shift-label">Ziel verschieben</span>
+                                <div class="toggle-group">
+                                    <button class="toggle-btn active" id="toggle-time"><span
+                                            class="material-icons-round" style="font-size:14px;">schedule</span>
+                                        Zeit</button>
+                                    <button class="toggle-btn" id="toggle-money"><span class="material-icons-round"
+                                            style="font-size:14px;">euro</span> Geld</button>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="motivation-section" id="motivation-section" style="display: none;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <h3>Motivation (Ziel verschieben)</h3>
-                            <div class="toggle-group">
-                                <button class="toggle-btn active" id="toggle-time"><span class="material-icons-round" style="font-size: 16px;">schedule</span> Zeit</button>
-                                <button class="toggle-btn" id="toggle-money"><span class="material-icons-round" style="font-size: 16px;">euro</span> Geld</button>
+                            <!-- Extra info row -->
+                            <div class="feierabend-extra-row">
+                                <span class="feierabend-extra-label">+<span id="feierabend-extra-mins">0</span> Min
+                                    &rarr; <span id="feierabend-extra-time">--:-- Uhr</span></span>
+                                <span class="feierabend-extra-money text-success">+<span id="extra-money">0,00</span>
+                                    €</span>
+                            </div>
+
+                            <div class="motivation-buttons" id="motivation-time-btns">
+                                <button class="btn btn-outline" id="btn-add-15">+15 Min</button>
+                                <button class="btn btn-outline" id="btn-add-30">+30 Min</button>
+                                <button class="icon-btn" id="btn-reset-motivation-time"
+                                    style="color:var(--error-color); display:none;">
+                                    <span class="material-icons-round">refresh</span>
+                                </button>
+                            </div>
+                            <div class="motivation-buttons" id="motivation-money-btns" style="display:none;">
+                                <button class="btn btn-outline" id="btn-add-5eur">+5 €</button>
+                                <button class="btn btn-outline" id="btn-add-10eur">+10 €</button>
+                                <button class="icon-btn" id="btn-reset-motivation-money"
+                                    style="color:var(--error-color); display:none;">
+                                    <span class="material-icons-round">refresh</span>
+                                </button>
                             </div>
                         </div>
-                        <p class="text-secondary" style="margin-bottom: 16px;">Extra Verdienst: <span class="text-success">+<span id="extra-money">0,00</span> €</span></p>
-
-                        <div class="motivation-buttons" id="motivation-time-btns">
-                            <button class="btn btn-outline" id="btn-add-15">+15 Min</button>
-                            <button class="btn btn-outline" id="btn-add-30">+30 Min</button>
-                            <button class="icon-btn" id="btn-reset-motivation-time" title="Motivation zurücksetzen" style="color: var(--error-color); display: none;">
-                                <span class="material-icons-round">refresh</span>
-                            </button>
-                        </div>
-
-                        <div class="motivation-buttons" id="motivation-money-btns" style="display: none;">
-                            <button class="btn btn-outline" id="btn-add-5eur">+5 €</button>
-                            <button class="btn btn-outline" id="btn-add-10eur">+10 €</button>
-                            <button class="icon-btn" id="btn-reset-motivation-money" title="Motivation zurücksetzen" style="color: var(--error-color); display: none;">
-                                <span class="material-icons-round">refresh</span>
-                            </button>
-                        </div>
                     </div>
-                </div>
-            </div>
 
+                    <!-- Legacy motivation section hidden (replaced by feierabend card) -->
+                    <div class="motivation-section" id="motivation-section" style="display:none;"></div>
+
+                </div><!-- /content-padding -->
+            </div><!-- /dashboard-view -->
+
+            <!-- ═══════════════ HISTORY VIEW ═══════════════ -->
             <div id="history-view" class="view">
-                <header class="top-app-bar">
+                <header class="top-app-bar" style="box-shadow: none; border-bottom: 1px solid var(--border-color);">
                     <h1>Verlauf</h1>
                 </header>
                 <div class="content-padding">
-                    <!-- History content -->
-                    <div class="card chart-card">
-                        <h3>Letzte 7 Tage</h3>
-                        <canvas id="history-chart" width="400" height="250"></canvas>
+                    <!-- Summary Cards -->
+                    <div class="history-summary-grid">
+                        <div class="history-summary-card">
+                            <span class="material-icons-round text-primary icon">schedule</span>
+                            <div class="data">
+                                <span class="value" id="history-stat-hours">0h</span>
+                                <span class="label">Diese Woche</span>
+                            </div>
+                        </div>
+                        <div class="history-summary-card">
+                            <span class="material-icons-round text-success icon">wb_sunny</span>
+                            <div class="data">
+                                <span class="value" id="history-stat-start">--:--</span>
+                                <span class="label">⌀ Startzeit</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="history-list" id="history-list">
-                        <!-- History items will be injected here -->
+                    <div class="card chart-card" style="margin-top: 8px;">
+                        <div class="chart-header"
+                            style="flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 12px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <h3 style="font-size: 15px; font-weight: 600;">Trend</h3>
+                                <div class="toggle-group" style="padding: 2px;">
+                                    <button class="toggle-btn active" id="chart-mode-duration"
+                                        style="font-size:12px; padding: 4px 10px;">Dauer</button>
+                                    <button class="toggle-btn" id="chart-mode-trend"
+                                        style="font-size:12px; padding: 4px 10px;">Zeiten</button>
+                                </div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span class="chart-legend" id="chart-legend-duration">
+                                    <span class="legend-dot" style="background:var(--primary-color);"></span> Arbeit
+                                    <span class="legend-dot"
+                                        style="background:var(--vacation-color); margin-left:6px;"></span> Urlaub
+                                    <span class="legend-dot"
+                                        style="background:var(--holiday-color); margin-left:6px;"></span> Feiertag
+                                </span>
+                                <span class="chart-legend" id="chart-legend-trend" style="display:none;">
+                                    <span class="legend-dot" style="background:var(--primary-color);"></span>
+                                    Arbeitszeitfenster
+                                </span>
+                            </div>
+                        </div>
+                        <div style="position: relative; height: 160px; width: 100%;">
+                            <canvas id="history-chart"></canvas>
+                        </div>
                     </div>
+
+                    <h3 style="margin: 20px 0 10px 4px; font-size: 15px; font-weight: 600; color: var(--text-primary);">
+                        Letzte Einträge</h3>
+                    <div class="rich-history-list" id="history-list"></div>
                 </div>
             </div>
 
+            <!-- ═══════════════ SETTINGS VIEW ═══════════════ -->
             <div id="settings-view" class="view">
                 <header class="top-app-bar">
                     <h1>Einstellungen</h1>
                 </header>
                 <div class="content-padding">
-                    <!-- Settings content -->
                     <div class="card settings-card">
                         <div class="setting-item">
                             <div class="setting-info">
                                 <span class="material-icons-round text-primary">dark_mode</span>
                                 <div>
                                     <h3>Dark Mode</h3>
-                                    <p class="text-secondary">Dunkles Design aktivieren</p>
+                                    <p class="text-secondary">Dunkles Design</p>
                                 </div>
                             </div>
                             <label class="switch">
@@ -169,15 +268,27 @@
                                 <span class="slider round"></span>
                             </label>
                         </div>
-
                         <hr class="divider">
-
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <span class="material-icons-round text-primary">developer_mode</span>
+                                <div>
+                                    <h3>Development</h3>
+                                    <p class="text-secondary">Entwicklermodus (Simulation)</p>
+                                </div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="dev-mode-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <hr class="divider">
                         <div class="setting-item">
                             <div class="setting-info">
                                 <span class="material-icons-round text-primary">payments</span>
                                 <div>
                                     <h3>Stundenlohn (Netto)</h3>
-                                    <p class="text-secondary">Für Motivations-Berechnung</p>
+                                    <p class="text-secondary">Für Motivationsberechnung</p>
                                 </div>
                             </div>
                             <div class="input-group">
@@ -185,45 +296,30 @@
                                 <span>€/h</span>
                             </div>
                         </div>
-
                         <hr class="divider">
-
-                        <div class="setting-item" id="add-holiday-btn" style="cursor: pointer;">
-                            <div class="setting-info">
-                                <span class="material-icons-round" style="color: #0288d1;">beach_access</span>
-                                <div>
-                                    <h3>Urlaub / Feiertag eintragen</h3>
-                                    <p class="text-secondary">Fügt 8h (1 Tag) zur aktuellen Woche/Monat hinzu</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr class="divider">
-
-                        <div class="setting-item" id="export-btn" style="cursor: pointer;">
+                        <div class="setting-item" id="export-btn" style="cursor:pointer;">
                             <div class="setting-info">
                                 <span class="material-icons-round text-success">download</span>
                                 <div>
                                     <h3>Daten exportieren</h3>
-                                    <p class="text-secondary">Als CSV-Datei speichern</p>
+                                    <p class="text-secondary">Als CSV-Datei</p>
                                 </div>
                             </div>
                         </div>
-
                         <hr class="divider">
-
-                        <div class="setting-item" id="reset-btn" style="cursor: pointer;">
+                        <div class="setting-item" id="reset-btn" style="cursor:pointer;">
                             <div class="setting-info">
                                 <span class="material-icons-round text-error">delete_forever</span>
                                 <div>
                                     <h3 class="text-error">Daten löschen</h3>
-                                    <p class="text-secondary">Alle Einträge unwiderruflich löschen</p>
+                                    <p class="text-secondary">Unwiderruflich</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
         </main>
 
         <!-- Bottom Navigation -->
@@ -242,5 +338,52 @@
             </button>
         </nav>
     </div>
+
+    <!-- ═══════════════ SIMULATION TOGGLE ═══════════════ -->
+    <button id="simulation-toggle-btn" class="btn-fab" title="Simulation (1000x Zeit)">
+        <span class="material-icons-round" id="simulation-toggle-icon">fast_forward</span>
+    </button>
+
+    <!-- ═══════════════ VACATION MODAL ═══════════════ -->
+    <div class="modal-overlay" id="vacation-modal" style="display:none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="material-icons-round text-primary" style="font-size:24px;">beach_access</span>
+                <h2>Urlaub / Feiertag</h2>
+            </div>
+            <p class="text-secondary modal-subtitle">Wähle Datum und Typ. Es werden 8h Netto gutgeschrieben.</p>
+            <div class="modal-field">
+                <label class="modal-label">Datum</label>
+                <input type="date" id="vacation-date" class="input-field input-field-wide">
+            </div>
+            <div class="modal-field">
+                <label class="modal-label">Typ</label>
+                <div class="type-options">
+                    <label class="type-option">
+                        <input type="radio" name="vacation-type" value="vacation" checked>
+                        <span class="material-icons-round">beach_access</span>
+                        <span>Urlaub</span>
+                    </label>
+                    <label class="type-option">
+                        <input type="radio" name="vacation-type" value="holiday">
+                        <span class="material-icons-round">star</span>
+                        <span>Feiertag</span>
+                    </label>
+                </div>
+            </div>
+            <div class="holiday-detected-badge" id="holiday-detected-badge" style="display:none;">
+                <span class="material-icons-round">auto_awesome</span>
+                <span id="holiday-detected-name">Feiertag erkannt</span>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" id="vacation-cancel-btn">Abbrechen</button>
+                <button class="btn btn-primary-solid" id="vacation-confirm-btn">Eintragen</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop" id="modal-backdrop" style="display:none;"></div>
+    <div class="dropdown-overlay" id="dropdown-overlay" style="display:none;"></div>
+
 </body>
+
 </html>
